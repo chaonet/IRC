@@ -10,24 +10,28 @@ hall_name = 'Learning'
 class EndSession(Exception):pass  #用于产生异常，退出
 
 class CommandHandler:
+
     def handle(self, session, line):
         if not line: return
-        # print line
+        #print line
         parts = line.split(' ', 1)
-        # print parts
+        #print parts
         if parts[0][0] == '/':
             cmd = parts[0][1:]
-            # print cmd
+            #print cmd
             try:
                 line = parts[1].strip()
-                # print line
+                #print line
             except IndexError:
-                line = ''
+                line = None
             meth = getattr(self, 'do_'+cmd, None)  # self ?？，和 房间绑定的？？
             try:
                 meth(session, line)
             except TypeError:
                 self.unknow(session, cmd)
+                # print 22
+        else:
+            self.unknow(session, line)
 
     def unknow(self, session, cmd):
         session.send('Unknow command: %s\r\n' % cmd)
@@ -63,7 +67,9 @@ class Server(asyncore.dispatcher):
         self.listen(5)
         self.sessions = []  # 保存服务器 当前的所有 client 会话列表
         self.users = {} # 用于比较是否有昵称冲突
+        # hall = Hall(self)
         self.hall = Hall(self)   # server 启动便实例化 Hall ，作为 server 属性。同时 ，初始化hall，将 server 存为 hall 属性
+        print self.hall, 'hall at server'
 
     def handle_accept(self):
         conn,addr = self.accept()
@@ -95,7 +101,7 @@ class ChatSession(asynchat.async_chat, CommandHandler):
     def found_terminator(self):
         line = ''.join(self.data) # 将所有发来的消息放入 line 中
         self.data = []
-        print line
+        # print line
         try:
             self.room.handle(self, line)  #对当前所在房间的方法进行查找，判断是否是命令
         except EndSession:
@@ -107,9 +113,9 @@ class ChatSession(asynchat.async_chat, CommandHandler):
 class Hall(Room):
 
     def add(self, session):
-        self.server.sessions.append(session) # 将新的会话添加到 Server 的实例的 sessions 列表。server属性继承自 Room
+        self.sessions.append(session) # 将新的会话添加到 sessions 列表。sessions属性继承自 Room
         session.send("welcome to IRC server!\r\n")
-        session.send("Please log in use:\r\n/login name:\r\n")
+        session.send("Please log in use:\r\n/login name\r\n")
     
     def do_login(self, session, line):
         name = line.strip()
@@ -121,11 +127,14 @@ class Hall(Room):
         else:
             session.clint_name = name
             self.server.users[session.clint_name] = session
+            # print self.server.users, 1
             session.send('Welcome, %s\r\n' % session.clint_name)
+            session.send("\r\nChatRoom list:\r\npython\r\nwrite\r\npm\r\n\r\nPlease log in use:\r\n/ChatRoom_name\r\n")
 
-    def do_logout(self, session):
-        del session.users[session.clint_name]
-        Room.do_logout(session, name)
+    def do_logout(self, session, line):
+        del self.server.users[session.clint_name]
+        Room.remove(self, session)
+        Room.do_logout(self, session, line)
 
     def do_python(self):
         pass
@@ -135,6 +144,15 @@ class Hall(Room):
 
     def do_pm(self):
         pass
+
+class Python(Room):
+    pass
+
+class Write(Room):
+    pass
+
+class Pm(Room):
+    pass
 
 if __name__ == '__main__':
     s = Server(port, host, hall_name)
