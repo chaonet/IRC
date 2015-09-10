@@ -75,7 +75,7 @@ class Server(asyncore.dispatcher):
         self.set_reuse_addr()
         self.bind((host, port))
         self.listen(5)
-        self.sessions = []  # 保存服务器 当前的所有 client 会话列表
+        # self.sessions = []  # 保存服务器 当前的所有 client 会话列表
         self.users = {} # 用于比较是否有昵称冲突
         # hall = Hall(self)
         self.hall = Hall(self)   # server 启动便实例化 Hall ，作为 server 属性。同时 ，初始化hall，将 server 存为 hall 属性
@@ -147,15 +147,17 @@ class Hall(Room):
             self.server.users[session.client_name] = session
             # print self.server.users, 1
             session.send('Welcome, %s\r\n' % session.client_name)
-            session.send("""\r\nChatRoom list:\r\npython\r\nwrite\r\npm
-            \r\nPlease log in use:\r\n/ChatRoom_name\r\n""")
+            session.send("""
+            \r\nChatRoom list:\r\npython\r\nwrite\r\npm
+            \r\nPlease log in use:\r\n/ChatRoom_name
+            \r\nMore helps use: /help\r\n""")
 
     def do_logout(self, session, line):
         del self.server.users[session.client_name]
         Room.remove(self, session)
         Room.do_logout(self, session, line)
 
-    def do_python(self, session,line):
+    def do_python(self, session, line):
         print self.server.python
         # <__main__.Python instance at 0x1011105f0>
         session.enter(self.server.python)
@@ -165,6 +167,17 @@ class Hall(Room):
 
     def do_pm(self):
         pass
+
+    def do_help(self, session, line):
+        session.send(
+        """
+        \r\n/login  loging Hall
+        \r\n/python enter ChatRoom 'python'
+        \r\n/write  enter ChatRoom 'write'
+        \r\n/pm     enter ChatRoom 'pm'
+        \r\n/logout exit
+        \r\n/help   get helps
+        """)
 
 class Python(Room):
 
@@ -199,6 +212,14 @@ class Python(Room):
 
     def do_broadcast(self, session, line):
         self.broadcast(session, session.client_name + ': ' + line)
+
+    def do_help(self, session, line):
+        session.send(
+        """
+        \r\n/online  other users in python
+        \r\n/back    back to hall
+        \r\n/help    get helps
+        """)
 
 class Write(Room):
     pass
