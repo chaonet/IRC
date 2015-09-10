@@ -5,7 +5,7 @@ import asynchat
 
 host = '127.0.0.1'
 port = 5000
-hall_name = 'Learning'
+# hall_name = 'Learning'
 
 class EndSession(Exception):pass  #用于产生异常，退出
 
@@ -47,9 +47,10 @@ class Room(CommandHandler):
     '''
     房间中的会话管理
     '''
-    def __init__(self,server):
+    def __init__(self, server, room_name):
         self.sessions = []
         self.server = server
+        self.room_name = room_name
 
     def add(self,session):
         self.sessions.append(session)
@@ -69,7 +70,7 @@ class Room(CommandHandler):
 
 class Server(asyncore.dispatcher):
     
-    def __init__(self, port, host, hall_name):
+    def __init__(self, port, host):
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
@@ -78,10 +79,10 @@ class Server(asyncore.dispatcher):
         # self.sessions = []  # 保存服务器 当前的所有 client 会话列表
         self.users = {} # 用于比较是否有昵称冲突
         # hall = Hall(self)
-        self.hall = Hall(self)   # server 启动便实例化 Hall ，作为 server 属性。同时 ，初始化hall，将 server 存为 hall 属性
-        self.python = Python(self)
-        self.write = Write(self)
-        self.pm = Pm(self)
+        self.hall = Hall(self, 'Hall')   # server 启动便实例化 Hall ，作为 server 属性。同时 ，初始化hall，将 server 存为 hall 属性
+        self.python = ChatRoom(self, 'python')
+        self.write = ChatRoom(self, 'write')
+        self.pm = ChatRoom(self, 'pm')
         print self.hall, 'hall at server'
         # <__main__.Hall instance at 0x1011105a8> hall at server
 
@@ -162,8 +163,8 @@ class Hall(Room):
         # <__main__.Python instance at 0x1011105f0>
         session.enter(self.server.python)
 
-    def do_write(self):
-        pass
+    def do_write(self, session, line):
+        session.enter(self.server.write)
 
     def do_pm(self):
         pass
@@ -177,13 +178,13 @@ class Hall(Room):
         \r\n/pm     enter ChatRoom 'pm'
         \r\n/logout exit
         \r\n/help   get helps
-        """)
+        \r\n""")
 
-class Python(Room):
+class ChatRoom(Room):
 
     def add(self, session):
         self.sessions.append(session) # 将新的会话添加到 sessions 列表。sessions属性继承自 Room
-        session.send("welcome to ChatRoom 'Python'!\r\n")
+        session.send("welcome to ChatRoom %s!\r\n" % self.room_name)
         # Room.broadcast(self, session.client_name + ' has entered the room.') # wrong
         # self.broadcast(session.client_name + ' has entered the room.') # wrong
         # print self.broadcast
@@ -219,16 +220,10 @@ class Python(Room):
         \r\n/online  other users in python
         \r\n/back    back to hall
         \r\n/help    get helps
-        """)
-
-class Write(Room):
-    pass
-
-class Pm(Room):
-    pass
+        \r\n""")
 
 if __name__ == '__main__':
-    s = Server(port, host, hall_name)
+    s = Server(port, host)
     # print s
     # <__main__.Server listening 127.0.0.1:5000 at 0x100732dd0>
     try:
