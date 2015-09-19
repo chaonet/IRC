@@ -193,6 +193,7 @@ class Room(Frame):
         for i in range(20):
             self.chatText.insert(END, 'hi\r\n')
         self.chatText.insert(END, 'HELLO')
+        self.chatText.yview_moveto(1.0)
         self.scrollbar.config(command=self.chatText.yview)
         # self.scrollbar(command=self.chatText.yview) 
         # AttributeError: Scrollbar instance has no __call__ method  ??
@@ -214,6 +215,7 @@ class Room(Frame):
 
     def send_message(self, event):
         self.chatText.insert(END, self.source.get())
+        self.chatText.yview_moveto(1.0)
         self.message_send.delete(0, END)
 
     def back_hall(self):
