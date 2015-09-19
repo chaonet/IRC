@@ -1,26 +1,81 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
-from Tkinter import *
+from Tkinter import * # Frame, Tk, 
 import datetime
 import time
 
-class Application(Frame):
+def position(self):
+    self.master.withdraw()  # 隐藏，不在界面显示部件，然后获取部件所在界面的尺寸
+    self.screen_width = self.master.winfo_screenwidth()
+    self.screen_height = self.master.winfo_screenheight()
+    # print screen_width, screen_height
+    # 1280 700
+
+    #print root.winfo_width(), root.winfo_height()
+    # 1 1
+
+    self.master.resizable(False,False) # 固定尺寸，不可变
+
+    #print root.winfo_width(), root.winfo_height()
+    # 1 1
+
+    self.master.update_idletasks()   # 显示正常窗口的关键语句
+    self.master.deiconify()   # 显示正常窗口的关键语句
+    # print root.winfo_width(), root.winfo_height()
+    # 272 50
+
+    self.master.withdraw() # TK
+    self.master.geometry('%sx%s+%s+%s' %
+            (
+            self.master.winfo_width() ,
+            self.master.winfo_height() ,
+            (self.screen_width - self.master.winfo_width())/2,
+            (self.screen_height - self.master.winfo_height())/2
+            ))  # TK
+    # print self.master.winfo_width(), self.master.winfo_height(), (self.screen_width/2 - self.winfo_width()), (self.screen_height/2 - self.winfo_height())
+    # 11 * 11 +  面积+左上角顶点X轴坐标+Y轴坐标
+    # 窗口宽度 * 窗口高度 * 窗口位置
+    self.master.deiconify() # Tk
+
+    #self.master.mainloop() # 出现一次这个语句，就要 self.quit 一次……
+
+
+class Welcome(Frame):
 
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.pack() # 用来管理和显示组件，默认 side = "top"
         self.welcome()
+        self.master.title('IRC') # 要放在定位之前……
+        position(self)
+
+    def get_name(self, event):
+        #self.master.destroy() # 关闭当前窗口
+        root = Tk()
+        app = Chat(master=root)
+        # app.mainloop()
+        self.master.destroy()
+
+    def chatroom_list(self):
+        print "hi!"
 
     def welcome(self):
         self.inputText = Label(self)
         self.inputText["text"] = "欢迎，请输入昵称:"
         self.inputText.pack(side="top")
+
+        # 用于提示昵称冲突
+        self.info_source = StringVar()
+        self.info_source.set("")
+        self.info = Label(self)
+        self.info["text"] = " "
+        self.info.pack(side="top")
         
         self.source = StringVar()
         # self.source.set('your name')
         self.input_name = Entry(self, textvariable=self.source)
         self.input_name["width"] = 20
-        self.input_name.bind('<Key-Return>', self.get_name)
+        self.input_name.bind('<Return>', self.get_name)
         self.input_name.pack(side="top", ipadx=25, padx=25)
 
         self.QUIT = Button(self)
@@ -29,58 +84,44 @@ class Application(Frame):
         self.QUIT["command"] =  self.quit
         self.QUIT.pack(side="left")
 
-        self.hi_there = Button(self)
-        self.hi_there["text"] = "Enter",
-        self.hi_there["command"] = self.get_name
-        self.hi_there.pack(side="right")
+        #self.hi_there = Button(self)
+        #self.hi_there["text"] = "Enter",
+        #self.hi_there["command"] = self.get_name
+        #self.hi_there.pack(side="right")
 
-    def get_name(self, event):
-        print "/login " + self.source.get()
-        self.master.destroy()
-        # self.master.destroy()
-        # print self
-        root = Tk()
-        app = Application_1(master=root)
-        app.master.title('IRC')
-        # app.master.maxsize(1000, 400)
-        app.mainloop()
-
-    def chatroom_list(self):
-        print "hi!"
-
-class Application_1(Frame):
+class Chat(Frame):
 
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.pack() # 用来管理和显示组件，默认 side = "top"
         self.chatroom()
+        self.master.title('IRC')
+        position(self)
 
     def room_python(self):
         print "/python"
-        self.master.destroy() # 关闭当前窗口
+        #self.master.destroy() # 关闭当前窗口
         root = Tk()
-        app = Application_2(master=root)
-        app.master.title('python')
-        # app.master.maxsize(1000, 400)
-        app.mainloop()
+        app = Room(master=root, name="python")
+        # app.master.title('python')
+        # app.mainloop()
+        self.master.destroy()
 
     def room_write(self):
         print "/write"
-        self.master.destroy() # 关闭当前窗口
+        #self.master.destroy() # 关闭当前窗口
         root = Tk()
-        app = Application_2(master=root)
-        app.master.title('write')
-        # app.master.maxsize(1000, 400)
-        app.mainloop()
+        app = Room(master=root, name="write")
+        # app.mainloop()
+        self.master.destroy()
 
     def room_pm(self):
         print "/pm"
-        self.master.destroy() # 关闭当前窗口
+        #elf.master.destroy() # 关闭当前窗口
         root = Tk()
-        app = Application_2(master=root)
-        app.master.title('pm')
-        # app.master.maxsize(1000, 400)
-        app.mainloop()
+        app = Room(master=root, name="pm")
+        # app.mainloop()
+        self.master.destroy()
 
     def chatroom(self):
         self.inputText = Label(self)
@@ -105,12 +146,14 @@ class Application_1(Frame):
         self.pm["command"] =  self.room_pm
         self.pm.pack(side="left")
 
-class Application_2(Frame):
+class Room(Frame):
 
-    def __init__(self, master=None):
+    def __init__(self, master=None, name=None):
         Frame.__init__(self, master)
         self.pack() # 用来管理和显示组件，默认 side = "top"
         self.chat()
+        self.master.title(name)
+        position(self)
 
     def chat(self):
 #窗口面板,用4个面板布局
@@ -131,7 +174,7 @@ class Application_2(Frame):
         self.back["text"] = "BACK"
         self.back["fg"]   = "red"
         self.back["padx"] = 40
-        self.back["command"] =  self.quit
+        self.back["command"] =  self.back_hall
         self.back.pack(side="left")
 
         self.online = Button(self.frame_l_b)
@@ -173,29 +216,12 @@ class Application_2(Frame):
         self.chatText.insert(END, self.source.get())
         self.message_send.delete(0, END)
 
+    def back_hall(self):
+        print "hall"
+
 # 创建一个顶层窗口，或者叫根窗口
 root = Tk()
-# print root, 1
-# .
-app = Application(master=root)
-# print app, 2
-app.master.title('IRC')
+app = Welcome(master=root)
 
-root.withdraw()    #hide window
-screen_width = root.winfo_screenwidth()
-screen_height = root.winfo_screenheight() - 100    #under windows, taskbar may lie under the screen
-root.resizable(False,False)
-
-root.update_idletasks()
-root.deiconify()    #now window size was calculated
-root.withdraw()     #hide window again
-root.geometry('%sx%s+%s+%s' % \
-    (root.winfo_width() + 10, root.winfo_height() + 10, \
-        (screen_width - root.winfo_width())/2, \
-        (screen_height - root.winfo_height())/2) )    #center window on desktop
-root.deiconify()
-
-# app.master.maxsize(1000, 400)
-
-# 进入窗体的主循环
 app.mainloop()
+
