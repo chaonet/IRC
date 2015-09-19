@@ -1,8 +1,14 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 from Tkinter import * # Frame, Tk, 
+from telnetlib import *
 import datetime
 import time
+
+host = "localhost"
+port = 5000
+
+server = Telnet(host, port)
 
 def position(self):
     self.master.withdraw()  # 隐藏，不在界面显示部件，然后获取部件所在界面的尺寸
@@ -51,10 +57,17 @@ class Welcome(Frame):
 
     def get_name(self, event):
         #self.master.destroy() # 关闭当前窗口
-        root = Tk()
-        app = Chat(master=root)
+        name = self.source.get()
+        server.write("/login " + name + "\r\n")
+        s = server.read_until("More helps use: /help", 1)
+        print s
+        if "Please try again." in s:
+            self.info["text"] = "The name is taken. Please change."
+        else:
+            root = Tk()
+            app = Chat(master=root)
         # app.mainloop()
-        self.master.destroy()
+            self.master.destroy()
 
     def chatroom_list(self):
         print "hi!"
@@ -65,8 +78,8 @@ class Welcome(Frame):
         self.inputText.pack(side="top")
 
         # 用于提示昵称冲突
-        self.info_source = StringVar()
-        self.info_source.set("")
+        #self.info_source = StringVar()
+        #self.info_source.set("")
         self.info = Label(self)
         self.info["text"] = " "
         self.info.pack(side="top")
@@ -150,10 +163,12 @@ class Room(Frame):
 
     def __init__(self, master=None, name=None):
         Frame.__init__(self, master)
+        server.write("/"+name+"\r\n")
         self.pack() # 用来管理和显示组件，默认 side = "top"
         self.chat()
         self.master.title(name)
         position(self)
+        self.chatText.insert(END, server.read_until("!"))
 
     def chat(self):
 #窗口面板,用4个面板布局
@@ -184,15 +199,10 @@ class Room(Frame):
         self.online.pack(side="right")
         self.frame_l_b.pack()
 
-        #发送信息
-        #显示消息Text右边的滚动条
+        # 发送信息, 显示消息Text右边的滚动条
         self.scrollbar = Scrollbar(self.frame_l_t)
-
         #显示消息Text，并绑定上面的滚动条
         self.chatText = Listbox(self.frame_l_t, width=70, height=18, yscrollcommand=self.scrollbar.set)
-        for i in range(20):
-            self.chatText.insert(END, 'hi\r\n')
-        self.chatText.insert(END, 'HELLO')
         self.chatText.yview_moveto(1.0)
         self.scrollbar.config(command=self.chatText.yview)
         # self.scrollbar(command=self.chatText.yview) 
@@ -200,7 +210,6 @@ class Room(Frame):
         self.scrollbar.pack(side="right", fill=Y)
         self.chatText.pack(side="left")
         self.frame_l_t.pack()
-
 
         self.source = StringVar()
         # self.source.set('your name')
@@ -214,7 +223,10 @@ class Room(Frame):
         print "/online"
 
     def send_message(self, event):
-        self.chatText.insert(END, self.source.get())
+        mesg = self.source.get()
+        print mesg
+        self.chatText.insert(END, mesg)
+        server.write(mesg+"\r\n")
         self.chatText.yview_moveto(1.0)
         self.message_send.delete(0, END)
 
@@ -222,6 +234,9 @@ class Room(Frame):
         print "hall"
 
 # 创建一个顶层窗口，或者叫根窗口
+
+server.read_until("/login name")
+
 root = Tk()
 app = Welcome(master=root)
 

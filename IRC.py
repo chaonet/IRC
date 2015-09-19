@@ -150,7 +150,7 @@ class ChatSession(asynchat.async_chat):
         '''
         line = ''.join(self.data) # 将所有发来的消息放入 line 中
         self.data = []
-        # print line
+        print line
         try:
             self.room.handle(self, line)  #对当前所在房间的方法进行查找，判断是否是命令
         except EndSession:
@@ -225,7 +225,6 @@ class Hall(Room):
         '''
         session.send(
         """
-        \r\n/login  loging Hall
         \r\n/python enter ChatRoom 'python'
         \r\n/write  enter ChatRoom 'write'
         \r\n/pm     enter ChatRoom 'pm'
