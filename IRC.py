@@ -216,7 +216,7 @@ class Hall(Room):
     def do_write(self, session, line):
         session.enter(self.server.write)
 
-    def do_pm(self):
+    def do_pm(self, session, line):
         session.enter(self.server.pm)
 
     def do_help(self, session, line):

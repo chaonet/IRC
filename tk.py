@@ -8,23 +8,14 @@ from telnetlib import *
 # import select
 import thread
 
+import sys
+
 from mtTkinter import *
 
 host = "localhost"
 port = 5000
 
 server = Telnet(host, port)
-
-def receiveMessage(self):
-    socket = server.get_socket()
-    while 1:
-        clientMsg = socket.recv(4096)
-        if not clientMsg:
-            continue
-        else:
-            self.chatText.insert(END, clientMsg)
-            print clientMsg
-
 
 def position(self):
     self.master.withdraw()  # 隐藏，不在界面显示部件，然后获取部件所在界面的尺寸
@@ -76,7 +67,7 @@ class Welcome(Frame):
         name = self.source.get()
         server.write("/login " + name + "\r\n")
         s = server.read_until("More helps use: /help", 1)
-        print s
+        # print s
         if "Please try again." in s:
             self.info["text"] = "The name is taken. Please change."
         else:
@@ -85,8 +76,8 @@ class Welcome(Frame):
         # app.mainloop()
             self.master.destroy()
 
-    def chatroom_list(self):
-        print "hi!"
+    # def chatroom_list(self):
+    #     print "hi!"
 
     def welcome(self):
         self.inputText = Label(self)
@@ -112,11 +103,6 @@ class Welcome(Frame):
         self.QUIT["fg"]   = "red"
         self.QUIT["command"] =  self.quit
         self.QUIT.pack(side="left")
-
-        #self.hi_there = Button(self)
-        #self.hi_there["text"] = "Enter",
-        #self.hi_there["command"] = self.get_name
-        #self.hi_there.pack(side="right")
 
 class Chat(Frame):
 
@@ -185,8 +171,6 @@ class Room(Frame):
         server.write("/"+name+"\r\n")
         self.pack() # 用来管理和显示组件，默认 side = "top"
 
-
-
         self.frame_l_t = Frame(self)
         self.frame_l_m = Frame(self)
         self.frame_l_b = Frame(self)
@@ -213,9 +197,7 @@ class Room(Frame):
         self.online.pack(side="right")
         self.frame_l_b.pack()
         
-        # 发送信息, 显示消息Text右边的滚动条
         self.scrollbar = Scrollbar(self.frame_l_t)
-        #显示消息Text，并绑定上面的滚动条
         self.chatText = Listbox(self.frame_l_t, width=70, height=18, yscrollcommand=self.scrollbar.set)
         self.chatText.yview_moveto(1.0)
         self.scrollbar.config(command=self.chatText.yview)
@@ -234,114 +216,64 @@ class Room(Frame):
         self.frame_l_m.pack()
 
 
-        # self.chat()
         self.master.title(name)
         position(self)
+
         self.chatText.insert(END, server.read_until("!"))
-        # server.set_option_negotiation_callback(self.resv_message())
-        
-        # server.set_debuglevel(3)
-        
-        #self.resv_message()
-               #self.frame = [Frame(), Frame(), Frame(), Frame()]
-        # print server.get_socket()
-        # server.get_socket().send("test\r\n")
-        # print server.get_socket().recv(4096)
-        # read_ready, write_ready, expt_ready = select.select([ server.get_socket() ],[],[])
-        # self.res = read_ready
-        # print self.res
-        # startNewThread(self)
+
+
+    def receiveMessage(self):
+        socket = server.get_socket()
+        while 1:
+            clientMsg = socket.recv(4096)
+            if not clientMsg:
+                continue
+            else:
+                self.chatText.insert(END, clientMsg)
+                self.chatText.yview_moveto(1.0)
+                # print clientMsg
 
     def startNewThread(self):
-        thread.start_new_thread(receiveMessage, (self,))
-        
+        thread.start_new_thread(self.receiveMessage, ())
+        # print thread.get_ident(), 1
 
 
     def online_people(self):
-        print "/online"
+        # print "/online"
+        server.write("/online" + "\r\n")
 
     def send_message(self, event):
-        send_mesg = self.source.get()
-        print send_mesg
-        self.chatText.insert(END, send_mesg)
-        server.write(send_mesg+"\r\n")
-        self.chatText.yview_moveto(1.0)
-        self.message_send.delete(0, END)
+        send_mesg = self.source.get().strip(" ")
+        # print send_mesg
+        if send_mesg:
+            self.chatText.insert(END, send_mesg)
+            server.write(send_mesg.encode("utf-8")+"\r\n")
+            self.chatText.yview_moveto(1.0)
+            self.message_send.delete(0, END)
+        else:
+            self.chatText.insert(END, "<不能发送空消息>")
+            self.chatText.yview_moveto(1.0)
+            self.message_send.delete(0, END)
 
     def back_hall(self):
-        print "hall"
+        # print "hall"
+        server.write("/back" + "\r\n")
+        root = Tk()
+        app = Chat(master=root)
+        self.master.destroy()
+        # print thread.get_ident()
 
     def offline(self):
         server.write("/logout\r\n")
-        self.quit()
-
-
-"""
-    def chat(self):
-#窗口面板,用4个面板布局
-        #self.frame = [Frame(), Frame(), Frame(), Frame()]
-        self.frame_l_t = Frame(self)
-        self.frame_l_m = Frame(self)
-        self.frame_l_b = Frame(self)
-        self.frame_r = Frame(self)
-        print 3
-        self.QUIT = Button(self.frame_l_b)
-        self.QUIT["text"] = "QUIT"
-        self.QUIT["fg"]   = "red"
-        self.QUIT["padx"] = 40
-        self.QUIT["command"] =  self.offline
-        self.QUIT.pack(side="left")
-        print 4
-        self.back = Button(self.frame_l_b)
-        self.back["text"] = "BACK"
-        self.back["fg"]   = "red"
-        self.back["padx"] = 40
-        self.back["command"] =  self.back_hall
-        self.back.pack(side="left")
-        print 5
-        self.online = Button(self.frame_l_b)
-        self.online["text"] = "online"
-        self.online["padx"] = 40
-        self.online["command"] = self.online_people
-        self.online.pack(side="right")
-        self.frame_l_b.pack()
-        print 6
-        # 发送信息, 显示消息Text右边的滚动条
-        self.scrollbar = Scrollbar(self.frame_l_t)
-        #显示消息Text，并绑定上面的滚动条
-        self.chatText = Listbox(self.frame_l_t, width=70, height=18, yscrollcommand=self.scrollbar.set)
-        self.chatText.yview_moveto(1.0)
-        self.scrollbar.config(command=self.chatText.yview)
-        # self.scrollbar(command=self.chatText.yview) 
-        # AttributeError: Scrollbar instance has no __call__ method  ??
-        self.scrollbar.pack(side="right", fill=Y)
-        self.chatText.pack(side="left")
-        self.frame_l_t.pack()
-        print 7
-        self.source = StringVar()
-        # self.source.set('your name')
-        self.message_send = Entry(self.frame_l_m, textvariable=self.source)
-        self.message_send["width"] = 70
-        self.message_send.bind('<Return>', self.send_message)
-        self.message_send.pack(fill=X) # , padx=25
-        self.frame_l_m.pack()
-        print 8
-"""
+        sys.exit()
+        # self.quit()
 
 
 # 创建一个顶层窗口，或者叫根窗口
 
-# server.read_until("/login name")
-
 root = Tk()
 app = Welcome(master=root)
-
-# thread.start_new_thread(app, ())
-# thread.start_new_thread(app, ())
-
-#app.mainloop()
+# print thread.get_ident()
+# app.mainloop()
 root.mainloop()
-
-
-
 
