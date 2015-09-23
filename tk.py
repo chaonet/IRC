@@ -1,21 +1,18 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 
-# from Tkinter import * # Frame, Tk, 
+# from Tkinter import *
 from telnetlib import *
-# import datetime
-# import time
-# import select
 import thread
-
 import sys
 
 from mtTkinter import *
 
-host = "localhost"
+host = "127.0.0.1"
 port = 5000
 
 server = Telnet(host, port)
+# server = ''
 
 def position(self):
     self.master.withdraw()  # 隐藏，不在界面显示部件，然后获取部件所在界面的尺寸
@@ -33,7 +30,7 @@ def position(self):
     # 1 1
 
     self.master.update_idletasks()   # 显示正常窗口的关键语句
-    self.master.deiconify()   # 显示正常窗口的关键语句
+    self.master.deiconify()   # 重新显示
     # print root.winfo_width(), root.winfo_height()
     # 272 50
 
@@ -48,10 +45,10 @@ def position(self):
     # print self.master.winfo_width(), self.master.winfo_height(), (self.screen_width/2 - self.winfo_width()), (self.screen_height/2 - self.winfo_height())
     # 11 * 11 +  面积+左上角顶点X轴坐标+Y轴坐标
     # 窗口宽度 * 窗口高度 * 窗口位置
-    self.master.deiconify() # Tk
+    # 设置大小与位置
+    self.master.deiconify()
 
     #self.master.mainloop() # 出现一次这个语句，就要 self.quit 一次……
-
 
 class Welcome(Frame):
 
@@ -67,26 +64,19 @@ class Welcome(Frame):
         name = self.source.get()
         server.write("/login " + name + "\r\n")
         s = server.read_until("More helps use: /help", 1)
-        # print s
+        print s
         if "Please try again." in s:
             self.info["text"] = "The name is taken. Please change."
         else:
             root = Tk()
             app = Chat(master=root)
-        # app.mainloop()
-            self.master.destroy()
-
-    # def chatroom_list(self):
-    #     print "hi!"
+            self.master.destroy() # 销毁此组件 和 其子组件
 
     def welcome(self):
         self.inputText = Label(self)
         self.inputText["text"] = "欢迎，请输入昵称:"
         self.inputText.pack(side="top")
 
-        # 用于提示昵称冲突
-        #self.info_source = StringVar()
-        #self.info_source.set("")
         self.info = Label(self)
         self.info["text"] = " "
         self.info.pack(side="top")
@@ -201,18 +191,15 @@ class Room(Frame):
         self.chatText = Listbox(self.frame_l_t, width=70, height=18, yscrollcommand=self.scrollbar.set)
         self.chatText.yview_moveto(1.0)
         self.scrollbar.config(command=self.chatText.yview)
-        # self.scrollbar(command=self.chatText.yview) 
-        # AttributeError: Scrollbar instance has no __call__ method  ??
         self.scrollbar.pack(side="right", fill=Y)
         self.chatText.pack(side="left")
         self.frame_l_t.pack()
         
-        self.source = StringVar()
-        # self.source.set('your name')
-        self.message_send = Entry(self.frame_l_m, textvariable=self.source)
+        self.message_input = StringVar()
+        self.message_send = Entry(self.frame_l_m, textvariable=self.message_input)
         self.message_send["width"] = 70
         self.message_send.bind('<Return>', self.send_message)
-        self.message_send.pack(fill=X) # , padx=25
+        self.message_send.pack(fill=X)
         self.frame_l_m.pack()
 
 
@@ -231,11 +218,9 @@ class Room(Frame):
             else:
                 self.chatText.insert(END, clientMsg)
                 self.chatText.yview_moveto(1.0)
-                # print clientMsg
 
     def startNewThread(self):
         thread.start_new_thread(self.receiveMessage, ())
-        # print thread.get_ident(), 1
 
 
     def online_people(self):
@@ -243,8 +228,10 @@ class Room(Frame):
         server.write("/online" + "\r\n")
 
     def send_message(self, event):
-        send_mesg = self.source.get().strip(" ")
-        # print send_mesg
+        print "test"
+        print self.message_input.get()
+        send_mesg = self.message_input.get().strip(" ")
+        print send_mesg
         if send_mesg:
             self.chatText.insert(END, send_mesg)
             server.write(send_mesg.encode("utf-8")+"\r\n")
@@ -261,19 +248,63 @@ class Room(Frame):
         root = Tk()
         app = Chat(master=root)
         self.master.destroy()
-        # print thread.get_ident()
 
     def offline(self):
         server.write("/logout\r\n")
         sys.exit()
-        # self.quit()
 
 
-# 创建一个顶层窗口，或者叫根窗口
+# 创建一个根窗口
 
 root = Tk()
 app = Welcome(master=root)
-# print thread.get_ident()
-# app.mainloop()
+# app = Connect(master=root)
+
 root.mainloop()
 
+
+"""
+class Connect(Frame):
+
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.pack() # 用来管理和显示组件，默认 side = "top"
+        self.connect_GUI()
+        self.master.title('IRC') # 要放在定位之前……
+        position(self)
+
+    def connect_GUI(self):
+        self.ip_port = Label(self)
+        self.ip_port["text"] = "服务器地址         端口"
+        self.ip_port.pack(side="top")
+
+        self.server_ip = StringVar()
+        self.server_ip.set(host)
+        self.input_ip = Entry(self, textvariable=self.server_ip)
+        self.input_ip["width"] = 5
+        self.input_ip.pack(side="left", ipadx=30, padx=5)
+
+        self.server_port = StringVar()
+        self.server_port.set(port)
+        self.input_port = Entry(self, textvariable=self.server_port)
+        self.input_port["width"] = 1
+        self.input_port.pack(side="left", ipadx=15, padx=5)
+
+        self.QUIT = Button(self)
+        self.QUIT["text"] = "enter"
+        self.QUIT["fg"]   = "black"
+        self.QUIT["command"] = self.connect
+        self.QUIT.pack()
+
+    def connect(self):
+        global server
+        self.ip = self.server_ip.get()
+        self.port = self.server_port.get()
+
+        server = Telnet(self.ip, self.port)
+        
+        root = Tk()
+        app = Welcome(master=root)
+        self.master.destroy()
+
+"""
